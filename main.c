@@ -73,7 +73,7 @@ int main(int ac, char **av, char **env)
 	size_t buff_size = 0;
 	ssize_t chars_nb = 0;
 	int i = 0;
-	(void)ac;
+	(void) ac;
 
 	while (1)
 	{
