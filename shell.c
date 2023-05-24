@@ -1,9 +1,10 @@
 #include "shell.h"
 /**
 * main - function
-* Return - return value 0
+*
+* Return: return dest
 */
-int main()
+int main(void)
 {
 	printf("shell project\n");
 	return (0);
