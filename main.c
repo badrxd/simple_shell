@@ -1,106 +1,73 @@
 #include "shell.h"
 
 /**
- * _handle - A function to handle Ctr + C signal.
- * @signals: The signal to handle.
- * Return: Nothing.
+ * _free_data - frees the data structure.
+ *
+ * @data_sh: the data structure.
+ * Return: no return
  */
-void _handle(int signals)
+void _free_data(data_shell *data_sh)
 {
-	(void)signals;
-	write(STDOUT_FILENO, "\nShell>> ", 9);
-}
+	unsigned int i;
 
-/**
- * _prompt - A function that prints the prompt Shell>>
- * Return: Nothing.
- */
-void _prompt(void)
-{
-	if (isatty(STDIN_FILENO))
-		write(STDOUT_FILENO, "Shell>> ", 8);
-}
-
-/**
- * _EOF - A function that chaecks if buffer is EOF or not
- * @buff: A pointer to the input.
- * Return: Nothing
- */
-void _EOF(char *buff)
-{
-	if (buff)
+	for (i = 0; data_sh->_environ[i]; i++)
 	{
-		free(buff);
-		buff = NULL;
+		free(data_sh->_environ[i]);
 	}
 
-	if (isatty(STDIN_FILENO))
-		write(STDOUT_FILENO, "\n", 1);
-	free(buff);
-	exit(EXIT_SUCCESS);
+	free(data_sh->_environ);
+	free(data_sh->pid);
 }
 
 /**
- * exit_shell - It's a function that exits the shell.
- * @cmd: The pointer to tokenizedd command.
- * Return: Nothing.
+ * _set_data - Initialize the data structure
+ *
+ * @data_sh: data structure
+ * @av: argument vector
+ * Return: no return
  */
-void exit_shell(char **cmd)
+void _set_data(data_shell *data_sh, char **av)
 {
-	int sta_tus = 0;
+	unsigned int i;
 
-	if (cmd[1] == NULL)
+	data_sh->av = av;
+	data_sh->input = NULL;
+	data_sh->args = NULL;
+	data_sh->status = 0;
+	data_sh->counter = 1;
+
+	for (i = 0; environ[i]; i++)
+		;
+
+	data_sh->_environ = malloc(sizeof(char *) * (i + 1));
+
+	for (i = 0; environ[i]; i++)
 	{
-		free_all(cmd);
-		exit(EXIT_SUCCESS);
+		data_sh->_environ[i] = _strdup(environ[i]);
 	}
 
-	sta_tus = _atoi(cmd[1]);
-	free_all(cmd);
-	exit(sta_tus);
+	data_sh->_environ[i] = NULL;
+	data_sh->pid = aux_itoa(getpid());
 }
 
 /**
- * main - A function that's runs the shell.
- * @ac: The number of input arguments.
- * @av: A pointer to array of inputed arguments.
- * @env: A pointer to array of the enviromental variables.
- * Return: Always 0.
+ * main - Entry point of shell
+ *
+ * @ac: args count
+ * @av: argst
+ *
+ * Return: 0 on success.
  */
-int main(int ac, char **av, char **env)
+int main(int ac, char **av)
 {
-	char *buffer = NULL, **cmd = NULL;
-	size_t buff_size = 0;
-	ssize_t chars_nb = 0;
-	int i = 0;
-	(void) ac;
+	data_shell datash;
+	(void)ac;
 
-	while (1)
-	{
-		i++;
-		_prompt();
-		signal(SIGINT, _handle);
-		chars_nb = getline(&buffer, &buff_size, stdin);
-		if (chars_nb == EOF)
-			_EOF(buffer);
-		else if (*buffer == '\n')
-			free(buffer);
-		else
-		{
-			buffer[_strlen(buffer) - 1] = '\0';
-			cmd = _tokening(buffer, " \0");
-			free(buffer);
-			if (_strcmp(cmd[0], "exit") != 0)
-				exit_shell(cmd);
-			else if (_strcmp(cmd[0], "cd") != 0)
-				_change_dir(cmd[1]);
-			else
-				child(cmd, av[0], env, i);
-		}
-		fflush(stdin);
-		buffer = NULL, buff_size = 0;
-	}
-	if (chars_nb == -1)
-		return (EXIT_FAILURE);
-	return (EXIT_SUCCESS);
+	signal(SIGINT, _get_sigint);
+	_set_data(&datash, av);
+	_shell_loop(&datash);
+	_free_data(&datash);
+	if (datash.status < 0)
+		return (255);
+	return (datash.status);
 }
